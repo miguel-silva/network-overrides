@@ -1,0 +1,18 @@
+{
+  "name": "network-overrides-repo",
+  "version": "1.0.0",
+  "description": "Override network calls. Browser extension configurable via related node package.",
+  "scripts": {
+    "prettier": "prettier --write .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Miguel Silva",
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^2.2.1"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all"
+  }
+}
