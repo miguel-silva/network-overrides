@@ -1,14 +1,27 @@
-chrome.runtime.onInstalled.addListener(() => {
+importScripts('./state.js');
+
+chrome.runtime.onInstalled.addListener(async () => {
   console.log('onInstalled');
 
-  refreshOverrides();
+  await initializeState();
+});
 
-  chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
-    const tabId = info.request.tabId;
+chrome.windows.onCreated.addListener(function () {
+  chrome.windows.getAll(async (windows) => {
+    if (windows.length !== 1) {
+      return;
+    }
 
-    console.info('onRuleMatchedDebug', info);
+    try {
+      console.info('on browser start');
 
-    logToTab(tabId, 'rule matched', info);
+      await initializeState();
+    } catch (e) {
+      console.log(
+        'an unexpected error occured while initializing on browser start',
+        e,
+      );
+    }
   });
 });
 
@@ -19,63 +32,101 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-function logToTab(tabId, ...parameters) {
-  chrome.tabs.sendMessage(tabId, {
-    action: 'log',
-    parameters: parameters,
+async function initializeState() {
+  // clear rules
+  await replaceDynamicRules();
+
+  await clearState();
+
+  await setState({
+    status: 'ready',
   });
 }
 
-function refreshOverrides() {
-  fetch('http://localhost:8117/overrides')
-    .then((response) => {
-      return response.json();
-    })
-    .then((overridesMap) => {
-      replaceDynamicRules(overridesMap);
-    })
-    .catch((e) => {
-      console.error(e);
+async function refreshOverrides() {
+  await setState({
+    status: 'refreshing',
+  });
+
+  try {
+    const overridesMap = await fetch('http://localhost:8117/overrides')
+      .then((response) => {
+        if (!response.ok) {
+          throw Error(response.statusText);
+        }
+        return response;
+      })
+      .then((response) => {
+        return response.json();
+      });
+
+    const addRules = getRulesFromOverridesMap(overridesMap);
+
+    await replaceDynamicRules(addRules);
+
+    await setState({
+      status: 'ready',
+      overridesMap,
     });
+  } catch (e) {
+    console.error(e);
+
+    // clear rules
+    await replaceDynamicRules();
+
+    await setState({
+      status: 'error',
+      errorMessage: e.message,
+      overridesMap: {},
+    });
+  }
 }
 
-function replaceDynamicRules(overridesMap) {
-  chrome.declarativeNetRequest.getDynamicRules((existingRules) => {
-    console.log('existing rules', existingRules);
+function getRulesFromOverridesMap(overridesMap) {
+  let rulesId = 1;
 
-    const removeRuleIds = existingRules.map((rule) => rule.id);
-
-    let rulesId = 1;
-
-    const addRules = Object.values(overridesMap).flatMap((overrideSet) => {
-      return overrideSet.map((override) => {
-        return {
-          id: rulesId++,
-          action: {
-            type: 'redirect',
-            redirect: {
-              regexSubstitution: override.to,
-            },
+  return Object.values(overridesMap).flatMap((overrideSet) => {
+    return overrideSet.map((override) => {
+      return {
+        id: rulesId++,
+        action: {
+          type: 'redirect',
+          redirect: {
+            regexSubstitution: override.to,
           },
-          condition: {
-            regexFilter: override.from,
-          },
-        };
-      });
+        },
+        condition: {
+          regexFilter: override.from,
+        },
+      };
     });
+  });
+}
 
-    console.log('updating rules', { addRules, removeRuleIds });
+function replaceDynamicRules(addRules) {
+  return new Promise((resolve, reject) => {
+    chrome.declarativeNetRequest.getDynamicRules((existingRules) => {
+      console.log('existing rules', existingRules);
 
-    chrome.declarativeNetRequest.updateDynamicRules(
-      { addRules, removeRuleIds },
-      () => {
-        if (chrome.runtime.lastError) {
-          console.log('failed to update rules', chrome.runtime.lastError);
-          return;
-        }
+      const removeRuleIds = existingRules.map((rule) => rule.id);
 
-        console.log('updated rules successfully');
-      },
-    );
+      console.log('updating rules', { addRules, removeRuleIds });
+
+      chrome.declarativeNetRequest.updateDynamicRules(
+        { addRules, removeRuleIds },
+        () => {
+          if (chrome.runtime.lastError) {
+            console.log('failed to update rules', chrome.runtime.lastError);
+
+            reject(chrome.runtime.lastError);
+            return;
+          }
+
+          console.log('updated rules successfully');
+
+          resolve();
+        },
+      );
+    });
   });
 }

@@ -7,6 +7,8 @@ const {
   getOverrides,
 } = require('./commands');
 
+const { EADDRINUSE } = require('./backend/errors');
+
 const [, , commandName, ...args] = process.argv;
 
 switch (commandName) {
@@ -14,17 +16,38 @@ switch (commandName) {
     const runInBackground = args.includes('--background');
 
     if (runInBackground) {
-      const serverProcess = spawnBackendProcessInBackground();
+      spawnBackendProcessInBackground()
+        .then((serverProcess) => {
+          console.log(
+            'starting backend process in the background with pid:',
+            serverProcess.pid,
+          );
+        })
+        .catch((e) => {
+          process.exitCode = e.exitCode;
 
-      console.log(
-        'starting backend process in the background with pid:',
-        serverProcess.pid,
-      );
+          if (e.exitCode === EADDRINUSE.exitCode) {
+            console.warn('The backend seems to be already running.');
+            return;
+          }
+
+          console.error(e);
+        });
 
       break;
     }
 
-    startBackend();
+    startBackend().catch((e) => {
+      if (e.code === EADDRINUSE.errorCode) {
+        process.exitCode = EADDRINUSE.exitCode;
+
+        console.warn('The backend seems to be already running.');
+      } else {
+        process.exitCode = 1;
+
+        console.error(e);
+      }
+    });
 
     break;
   }

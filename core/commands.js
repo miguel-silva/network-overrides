@@ -16,19 +16,33 @@ function spawnBackendProcess(options = {}) {
 
   const { envOptions, ...restOptions } = options;
 
-  const serverProcess = spawn('node', [backendStartPath], {
-    ...restOptions,
-    env: {
-      ...process.env,
-      ...envOptions,
-    },
+  const initializedServerProcessPromise = new Promise((resolve, reject) => {
+    const serverProcess = spawn('node', [backendStartPath], {
+      ...restOptions,
+      env: {
+        ...process.env,
+        ...envOptions,
+      },
+    });
+
+    setTimeout(() => {
+      if (serverProcess.exitCode) {
+        const error = new Error('server initialization failed');
+
+        error.exitCode = serverProcess.exitCode;
+
+        reject(error);
+      }
+
+      resolve(serverProcess);
+    }, 500);
   });
 
-  return serverProcess;
+  return initializedServerProcessPromise;
 }
 
-function spawnBackendProcessInBackground(options = {}) {
-  const serverProcess = spawnBackendProcess({
+async function spawnBackendProcessInBackground(options = {}) {
+  const serverProcess = await spawnBackendProcess({
     ...options,
     detached: true,
     stdio: 'ignore',

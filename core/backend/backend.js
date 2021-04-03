@@ -1,5 +1,7 @@
 const fastify = require('fastify');
 
+const { EADDRINUSE } = require('./errors');
+
 const app = fastify();
 
 const overridesMap = {};
@@ -31,9 +33,20 @@ app.delete('/overrides/:overrideSetId', async (request) => {
 });
 
 function start(port) {
-  return app.listen(port).then(() => {
-    console.log(`Server running at http://localhost:${port}/`);
-  });
+  return app
+    .listen(port)
+    .then(() => {
+      console.log(`Server running at http://localhost:${port}/`);
+    })
+    .catch((error) => {
+      if (error.code === EADDRINUSE.errorCode) {
+        process.exitCode = EADDRINUSE.exitCode;
+      } else {
+        process.exitCode = 1;
+      }
+
+      throw error;
+    });
 }
 
 module.exports = { start };
