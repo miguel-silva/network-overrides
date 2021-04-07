@@ -3,8 +3,25 @@ const fastify = require('fastify');
 const { EADDRINUSE } = require('./errors');
 
 const app = fastify();
+app.register(require('fastify-websocket'));
 
 const overridesMap = {};
+
+const overridesWebsocketConnectionSet = new Set();
+
+app.get('/overrides/ws', { websocket: true }, (connection) => {
+  console.log('new connection');
+
+  overridesWebsocketConnectionSet.add(connection);
+
+  connection.socket.send(JSON.stringify(overridesMap));
+
+  connection.socket.on('close', () => {
+    console.log('closing connection');
+
+    overridesWebsocketConnectionSet.delete(connection);
+  });
+});
 
 app.get('/overrides', async () => {
   console.log('returning overrides', overridesMap);
@@ -19,6 +36,8 @@ app.post('/overrides/:overrideSetId', async (request) => {
 
   overridesMap[overrideSetId] = request.body;
 
+  sendOverridesMapToClients();
+
   return true;
 });
 
@@ -28,6 +47,8 @@ app.delete('/overrides/:overrideSetId', async (request) => {
   console.log('removing overrides', request.params.overrideSetId);
 
   delete overridesMap[overrideSetId];
+
+  sendOverridesMapToClients();
 
   return true;
 });
@@ -47,6 +68,14 @@ function start(port) {
 
       throw error;
     });
+}
+
+function sendOverridesMapToClients() {
+  console.log(`updating ${overridesWebsocketConnectionSet.size} client(s)`);
+
+  overridesWebsocketConnectionSet.forEach((connection) => {
+    connection.socket.send(JSON.stringify(overridesMap));
+  });
 }
 
 module.exports = { start };

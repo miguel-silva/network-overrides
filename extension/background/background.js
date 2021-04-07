@@ -1,5 +1,3 @@
-importScripts('./state.js');
-
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('onInstalled');
 
@@ -27,8 +25,8 @@ chrome.windows.onCreated.addListener(function () {
 
 chrome.runtime.onMessage.addListener((message) => {
   console.log('received message', message);
-  if (message.type === 'refresh') {
-    refreshOverrides();
+  if (message.type === 'connect') {
+    connect();
   }
 });
 
@@ -43,48 +41,83 @@ async function initializeState() {
   });
 }
 
-async function refreshOverrides() {
+async function connect() {
   await setState({
-    status: 'refreshing',
+    status: 'connecting',
+    errorMessage: null,
   });
 
-  try {
-    const overridesMap = await fetch('http://localhost:8117/overrides')
-      .then((response) => {
-        if (!response.ok) {
-          throw Error(response.statusText);
-        }
-        return response;
-      })
-      .then((response) => {
-        return response.json();
-      });
+  let overridesSocket = new WebSocket('ws://localhost:8117/overrides/ws');
+
+  overridesSocket.onmessage = (event) => {
+    console.log('socket message', event);
+
+    const overridesMap = JSON.parse(event.data);
 
     const addRules = getRulesFromOverridesMap(overridesMap);
 
-    await replaceDynamicRules(addRules);
+    replaceDynamicRules(addRules);
 
-    await setState({
-      status: 'ready',
+    setState({
+      status: 'connected',
+      errorMessage: null,
       overridesMap,
     });
-  } catch (e) {
-    console.error(e);
+  };
 
-    // clear rules
-    await replaceDynamicRules();
+  overridesSocket.onclose = (event) => {
+    console.log('socket closed', event);
 
-    await setState({
-      status: 'error',
-      errorMessage: e.message,
-      overridesMap: {},
+    let errorMessage;
+
+    switch (event.code) {
+      case 1000:
+        errorMessage = null;
+        break;
+      case 1006:
+        errorMessage = 'Server seems to be down';
+        break;
+      default:
+        errorMessage = `Connection closed with status code: ${event.code}`;
+    }
+
+    setState({
+      status: 'ready',
+      overridesMap: null,
+      errorMessage,
     });
+
+    overridesSocket = null;
+  };
+
+  function closeSocket() {
+    if (overridesSocket) {
+      overridesSocket.close(1000);
+      overridesSocket = null;
+    }
   }
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'disconnect') {
+      closeSocket();
+    }
+  });
+
+  chrome.windows.onRemoved.addListener(function () {
+    chrome.windows.getAll(async (windows) => {
+      if (windows.length > 0) {
+        return;
+      }
+
+      console.info('on browser close');
+
+      closeSocket();
+    });
+  });
 }
 
 function getRulesFromOverridesMap(overridesMap) {
   let rulesId = 1;
-
   return Object.values(overridesMap).flatMap((overrideSet) => {
     return overrideSet.map((override) => {
       return {

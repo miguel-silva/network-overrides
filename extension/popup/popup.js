@@ -1,5 +1,7 @@
 const statusLabelEl = document.getElementById('status-label');
-const refreshButtonEl = document.getElementById('refresh-button');
+const connectionActionButtonEl = document.getElementById(
+  'connection-action-button',
+);
 const mainEl = document.querySelector('main');
 
 getState().then(handleStateUpdate);
@@ -15,23 +17,45 @@ function handleStateUpdate(state) {
     return;
   }
 
-  switch (state.status) {
-    case 'refreshing':
-      setIsRefreshButtonEnabled(false);
+  connectionActionButtonEl.removeAttribute('hidden');
 
-      statusLabelEl.textContent = 'Refreshing...';
+  switch (state.status) {
+    case 'connecting':
+      connectionActionButtonEl.removeEventListener('click', handleConnectClick);
+      connectionActionButtonEl.removeEventListener(
+        'click',
+        handleDisconnectClick,
+      );
+      connectionActionButtonEl.setAttribute('disabled', true);
+      connectionActionButtonEl.textContent = 'Connect';
+
+      statusLabelEl.textContent = 'Connecting...';
       break;
 
     case 'ready':
-      setIsRefreshButtonEnabled(true);
+      connectionActionButtonEl.addEventListener('click', handleConnectClick);
+      connectionActionButtonEl.removeEventListener(
+        'click',
+        handleDisconnectClick,
+      );
+      connectionActionButtonEl.removeAttribute('disabled');
+      connectionActionButtonEl.textContent = 'Connect';
 
-      statusLabelEl.textContent = 'Ready';
+      if (state.errorMessage) {
+        statusLabelEl.textContent = `Disconnected: ${state.errorMessage}`;
+      } else {
+        statusLabelEl.textContent = 'Disconnected';
+      }
+
       break;
 
-    case 'error':
-      setIsRefreshButtonEnabled(true);
+    case 'connected':
+      connectionActionButtonEl.removeEventListener('click', handleConnectClick);
+      connectionActionButtonEl.addEventListener('click', handleDisconnectClick);
+      connectionActionButtonEl.removeAttribute('disabled');
+      connectionActionButtonEl.textContent = 'Disconnect';
 
-      statusLabelEl.textContent = `Refresh failed: ${state.errorMessage}`;
+      statusLabelEl.textContent = 'Connected';
       break;
 
     default:
@@ -72,16 +96,10 @@ function handleStateUpdate(state) {
   mainEl.innerHTML = `<ul class="override-sets">${overrideSetsContentHtml}</ul>`;
 }
 
-function setIsRefreshButtonEnabled(enabled) {
-  if (enabled) {
-    refreshButtonEl.addEventListener('click', handleRefreshClick);
-    refreshButtonEl.removeAttribute('disabled');
-  } else {
-    refreshButtonEl.removeEventListener('click', handleRefreshClick);
-    refreshButtonEl.setAttribute('disabled', 'true');
-  }
+function handleConnectClick() {
+  chrome.runtime.sendMessage({ type: 'connect' });
 }
 
-function handleRefreshClick() {
-  chrome.runtime.sendMessage({ type: 'refresh' });
+function handleDisconnectClick() {
+  chrome.runtime.sendMessage({ type: 'disconnect' });
 }
