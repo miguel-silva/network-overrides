@@ -4,11 +4,17 @@ const connectionActionButtonEl = document.getElementById(
 );
 const mainEl = document.querySelector('main');
 
-getState().then(handleStateUpdate);
+chrome.runtime.onMessage.addListener((message) => {
+  console.log('popup - message received', message);
 
-addStateChangedListener(() => {
-  getState().then(handleStateUpdate);
+  switch (message.type) {
+    case 'state-updated':
+      handleStateUpdate(message.state);
+      break;
+  }
 });
+
+chrome.runtime.sendMessage({ type: 'get-state' }, handleStateUpdate);
 
 function handleStateUpdate(state) {
   if (!state) {
