@@ -5,7 +5,7 @@ const connectionActionButtonEl = document.getElementById(
 const mainEl = document.querySelector('main');
 
 chrome.runtime.onMessage.addListener((message) => {
-  console.log('popup - message received', message);
+  console.log('message received', message);
 
   switch (message.type) {
     case 'state-updated':

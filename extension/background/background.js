@@ -19,7 +19,7 @@ chrome.windows.onRemoved.addListener(function () {
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  console.log('background - message received', message);
+  console.log('message received', message);
 
   switch (message.type) {
     case 'get-state':
@@ -45,17 +45,23 @@ function connect() {
     status: 'connecting',
   });
 
-  overridesSocket = new WebSocket('ws://localhost:8117/overrides/ws');
+  overridesSocket = new WebSocket('ws://localhost:8117');
 
   overridesSocket.onmessage = (event) => {
     console.log('socket message', event);
 
-    const overridesMap = JSON.parse(event.data);
+    const message = JSON.parse(event.data);
 
-    updateState({
-      status: 'connected',
-      overridesMap,
-    });
+    switch (message.type) {
+      case 'overrides': {
+        updateState({
+          status: 'connected',
+          overridesMap: message.overridesMap,
+        });
+
+        break;
+      }
+    }
   };
 
   overridesSocket.onclose = (event) => {

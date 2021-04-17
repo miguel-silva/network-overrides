@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+const path = require('path');
+
 const {
   startBackend,
   spawnBackendProcessInBackground,
@@ -53,18 +55,24 @@ switch (commandName) {
   }
 
   case 'add': {
-    if (args.length < 3 || args % 2 === 0) {
+    if (args.length < 2) {
       throw new Error(
-        `network-overrides: 'add' command expects an override set id followed by pairs of match and related replacement. ex: \n\tnetwork-overrides add google-search "https://www.google.com/search?(.*)" "http://localhost:3000/\\1"`,
+        `'network-overrides add' command expects an override set id followed by the respective overrides\n` +
+          `\t- JSON string. ex: \n\t\tnetwork-overrides add google-search '[{from:"https://www.google.com/search/(.*)",to:"http://localhost:3000/\$1"}]\n` +
+          `\t- path to JSON file preceeded by @. ex: \n\t\tnetwork-overrides add google-search @config/overrides.json`,
       );
     }
 
     const overrideSetId = args[0];
 
-    const overrides = [];
+    const overridesArg = args[1];
 
-    for (let i = 1; i < args.length; i += 2) {
-      overrides.push({ from: args[i], to: args[i + 1] });
+    let overrides;
+
+    if (overridesArg[0] === '@') {
+      overrides = require(path.resolve(overridesArg.slice(1)));
+    } else {
+      overrides = JSON.parse(overridesArg);
     }
 
     addOverrides(overrideSetId, overrides).catch((e) => {
@@ -79,7 +87,7 @@ switch (commandName) {
 
     if (!overrideSetId) {
       throw new Error(
-        `network-overrides: 'remove' command expects an override set id. ex: \n\tnetwork-overrides remove google-search`,
+        `'network-overrides remove' command expects an override set id. ex: \n\tnetwork-overrides remove google-search`,
       );
     }
 
@@ -104,8 +112,8 @@ switch (commandName) {
 
   default:
     throw new Error(
-      `network-overrides: '${commandName}' command does not exist`,
+      `'network-overrides ${commandName}' is not a valid command`,
     );
 }
 
-// node cli.js add automation-ui "https://cdn\\..*\\.pipedriveassets\\..*/automation-ui/(.*)" "http://localhost:3065/\\1"
+// node cli.js add automation-ui '[{"from":"https://cdn\\..*\\.pipedriveassets\\..*/automation-ui/(.*)","to":"http://localhost:3065/$1"}]'

@@ -9,12 +9,12 @@ const overridesMap = {};
 
 const overridesWebsocketConnectionSet = new Set();
 
-app.get('/overrides/ws', { websocket: true }, (connection) => {
+app.get('/', { websocket: true }, (connection) => {
   console.log('new connection');
 
   overridesWebsocketConnectionSet.add(connection);
 
-  connection.socket.send(JSON.stringify(overridesMap));
+  connection.socket.send(createOverridesMessage());
 
   connection.socket.on('close', () => {
     console.log('closing connection');
@@ -71,11 +71,23 @@ function start(port) {
 }
 
 function sendOverridesMapToClients() {
-  console.log(`updating ${overridesWebsocketConnectionSet.size} client(s)`);
+  if (overridesWebsocketConnectionSet.size === 0) {
+    return;
+  }
+
+  console.log(
+    `sending latest overrides to ${overridesWebsocketConnectionSet.size} client(s)`,
+  );
+
+  const messageText = createOverridesMessage();
 
   overridesWebsocketConnectionSet.forEach((connection) => {
-    connection.socket.send(JSON.stringify(overridesMap));
+    connection.socket.send(messageText);
   });
+}
+
+function createOverridesMessage() {
+  return JSON.stringify({ type: 'overrides', overridesMap });
 }
 
 module.exports = { start };
