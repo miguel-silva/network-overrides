@@ -6,7 +6,7 @@ Via the combination of a [CLI](./core/README.md) and a [browser extension](./ext
 
 It was designed to allow one to develop web client-side apps on top of an external environment (ex: test or production) using assets served from one (or multiple) local dev-server(s).
 
-Additionally, with the help of the `network-overrides wrap-command` command, one can ensure that a set of overrides are only in place while the provided sub-command is running (ex: dev-server process).
+Additionally, by having the command line as a source of truth, one can ensure that a set of overrides are only in place while the related process is running (ex: dev-server).
 
 ## Quick start
 
