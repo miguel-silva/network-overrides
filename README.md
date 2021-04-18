@@ -10,28 +10,26 @@ Additionally, by having the command line as a source of truth, one can ensure th
 
 ## Quick start
 
-Install npm package locally:
+1. Install npm package locally:
 
 ```sh
 npm i network-overrides
 ```
 
-Bootstrap a local dev-server, wrapped with overrides:
+2. Bootstrap a local dev-server, wrapped with overrides:
 
 ```sh
 npx network-overrides wrap-command 'npx webpack serve' my-first-override '[{"from":"https://live-cdn\\.com/(.*)","to":"http://localhost:8080/$1"}]' --ensure-backend
 ```
 
 <details>
-  <summary>Command details</summary>
-
-  <p><strong>The command above will</strong></p>
+  <summary>Command functionality</summary>
   <ol>
-    <li>Ensure that the **Network Overrides** shared backend is running, which in turn will transmit the current overrides to the browser extension when necessary</li>
-    <li>Add a single override which redirects assets from `https://live-cdn.com/` to the corresponding path under `http://localhost:8080/`. It belongs to an override set called `my-first-override`</li>
-    <li>Run `npx webpack serve` which will bootstrap the local webpack dev-server</li>
-    <li>Later, upon exiting, remove the override under `my-first-override`</li>
+    <li>Ensure that the <strong>Network Overrides</strong> shared backend is running, which in turn will transmit the current overrides to the browser extension when necessary</li>
+    <li>Add a single override which redirects assets from <code>https://live-cdn.com/</code> to the corresponding path under <code>http://localhost:8080/</code>. It belongs to an override set called <em>my-first-override</em></li>
+    <li>Run <code>npx webpack serve</code> which will bootstrap the local webpack-dev-server</li>
+    <li>Later, upon exiting, remove the override under <em>my-first-override</em></li>
   </ol>
 </details>
 
-Install the companion extension from Chrome's webstore and enable the current overrides on the browser-side by clicking the extension's icon and then "Connect" inside the extension's popover.
+3. Install the companion extension from Chrome's webstore and enable the current overrides on the browser-side by clicking the extension's icon and then "Connect" inside the extension's popover.
