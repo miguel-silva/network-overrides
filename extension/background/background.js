@@ -127,14 +127,14 @@ function updateState(newState) {
   state = newState;
 
   const newActiveOverrides = newState.overridesMap
-    ? Object.values(newState.overridesMap)
-        .map(({ from, to }) => {
+    ? Object.values(newState.overridesMap).flatMap((overrides) =>
+        overrides.map(({ from, to }) => {
           return {
             from: new RegExp(from),
             to,
           };
-        })
-        .flat()
+        }),
+      )
     : [];
 
   const areOverridesInPlace = activeOverrides.length > 0;

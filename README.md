@@ -19,7 +19,7 @@ npm i network-overrides
 Bootstrap a local dev-server, wrapped with overrides:
 
 ```sh
-npx network-overrides wrap-command 'npx webpack serve' my-first-override '[{"from":"https://live-cdn\\.com/(.*)", "to":"http://localhost:8080/$1"}]' --ensure-backend
+npx network-overrides wrap-command 'npx webpack serve' my-first-override '[{"from":"https://live-cdn\\.com/(.*)","to":"http://localhost:8080/$1"}]' --ensure-backend
 ```
 
 <details>
