@@ -2,7 +2,11 @@
   "name": "network-overrides",
   "version": "0.1.0",
   "description": "CLI and backend for the Network Overrides browser extension",
-  "main": "server.js",
+  "bin": {
+    "network-overrides": "./cli.js"
+  },
+  "main": "./cli.js",
+  "files": ["backend/*", "cli.js", "commands.js", "constants.js"],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

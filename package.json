@@ -1,6 +1,5 @@
 {
-  "name": "network-overrides-repo",
-  "version": "1.0.0",
+  "private": true,
   "description": "Override network calls. Browser extension configurable via related node package.",
   "scripts": {
     "prettier": "prettier --write .",

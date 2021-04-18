@@ -107,10 +107,7 @@ function handleBeforeRequest(request) {
     return;
   }
 
-  const redirectUrl = request.url.replace(
-    new RegExp(override.from),
-    override.to,
-  );
+  const redirectUrl = request.url.replace(override.from, override.to);
 
   console.log(
     'redirecting',
@@ -130,7 +127,14 @@ function updateState(newState) {
   state = newState;
 
   const newActiveOverrides = newState.overridesMap
-    ? Object.values(newState.overridesMap).flat()
+    ? Object.values(newState.overridesMap)
+        .map(({ from, to }) => {
+          return {
+            from: new RegExp(from),
+            to,
+          };
+        })
+        .flat()
     : [];
 
   const areOverridesInPlace = activeOverrides.length > 0;

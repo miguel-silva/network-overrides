@@ -7,6 +7,7 @@ const {
   addOverrides,
   removeOverrides,
   getOverrides,
+  wrapCommandWithOverrides,
 } = require('./commands');
 
 const { EADDRINUSE } = require('./backend/errors');
@@ -14,7 +15,7 @@ const { EADDRINUSE } = require('./backend/errors');
 const [, , commandName, ...args] = process.argv;
 
 switch (commandName) {
-  case 'start': {
+  case 'start-backend': {
     const runInBackground = args.includes('--background');
 
     if (runInBackground) {
@@ -57,7 +58,7 @@ switch (commandName) {
   case 'add': {
     if (args.length < 2) {
       throw new Error(
-        `'network-overrides add' command expects an override set id followed by the respective overrides\n` +
+        `'network-overrides add' expects an override set id followed by the respective overrides\n` +
           `\t- JSON string. ex: \n\t\tnetwork-overrides add google-search '[{from:"https://www.google.com/search/(.*)",to:"http://localhost:3000/\$1"}]\n` +
           `\t- path to JSON file preceeded by @. ex: \n\t\tnetwork-overrides add google-search @config/overrides.json`,
       );
@@ -65,18 +66,12 @@ switch (commandName) {
 
     const overrideSetId = args[0];
 
-    const overridesArg = args[1];
-
-    let overrides;
-
-    if (overridesArg[0] === '@') {
-      overrides = require(path.resolve(overridesArg.slice(1)));
-    } else {
-      overrides = JSON.parse(overridesArg);
-    }
+    const overrides = getOverridesFromArg(args[1]);
 
     addOverrides(overrideSetId, overrides).catch((e) => {
-      console.error(`failed to add ${overrideSetId}`, e);
+      console.error(`failed to add overrides for '${overrideSetId}'`, e);
+
+      process.exitCode = 1;
     });
 
     break;
@@ -92,7 +87,9 @@ switch (commandName) {
     }
 
     removeOverrides(overrideSetId).catch((e) => {
-      console.error(`failed to remove ${overrideSetId}`, e);
+      console.error(`failed to remove overrides for '${overrideSetId}'`, e);
+
+      process.exitCode = 1;
     });
 
     break;
@@ -110,10 +107,45 @@ switch (commandName) {
     break;
   }
 
+  case 'wrap-command': {
+    const normalizedArgs = args.filter((arg) => arg !== '--ensure-backend');
+
+    if (normalizedArgs.length < 3) {
+      throw new Error(
+        `'network-overrides wrap-command' expects a command string to execute, followed by an override set id and the respective overrides\n` +
+          `\t- JSON string. ex: \n\t\tnetwork-overrides wrap-command 'node google-search-proxy.js' google-search '[{from:"https://www.google.com/search/(.*)",to:"http://localhost:3000/\$1"}]\n` +
+          `\t- path to JSON file preceeded by @. ex: \n\t\tnetwork-overrides wrap-command 'node google-search-proxy.js' google-search @config/overrides.json`,
+      );
+    }
+
+    const commandToWrap = normalizedArgs[0];
+
+    const overrideSetId = normalizedArgs[1];
+
+    const overrides = getOverridesFromArg(normalizedArgs[2]);
+
+    const ensureBackend = normalizedArgs.length < args.length;
+
+    wrapCommandWithOverrides(
+      commandToWrap,
+      overrideSetId,
+      overrides,
+      ensureBackend,
+    );
+
+    break;
+  }
+
   default:
     throw new Error(
       `'network-overrides ${commandName}' is not a valid command`,
     );
 }
 
-// node cli.js add automation-ui '[{"from":"https://cdn\\..*\\.pipedriveassets\\..*/automation-ui/(.*)","to":"http://localhost:3065/$1"}]'
+function getOverridesFromArg(overridesArg) {
+  if (overridesArg[0] === '@') {
+    return require(path.resolve(overridesArg.slice(1)));
+  } else {
+    return JSON.parse(overridesArg);
+  }
+}

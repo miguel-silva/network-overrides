@@ -3,6 +3,8 @@ const path = require('path');
 const fetch = require('node-fetch');
 
 const { start } = require('./backend');
+const { EADDRINUSE } = require('./backend/errors');
+
 const { PORT } = require('./constants');
 
 const backendUrl = `http://localhost:${PORT}`;
@@ -71,6 +73,78 @@ async function removeOverrides(overrideSetId) {
   });
 }
 
+async function wrapCommandWithOverrides(
+  commandToWrap,
+  overrideSetId,
+  overrides,
+  ensureBackend,
+) {
+  const [subCommandName, ...subArgs] = commandToWrap.trim().split(/ +/g);
+
+  if (ensureBackend) {
+    try {
+      await spawnBackendProcessInBackground();
+    } catch (e) {
+      // ignore EADDRINUSE, which means that the backend is already running
+      if (e.exitCode !== EADDRINUSE.exitCode) {
+        process.exitCode = e.exitCode || 1;
+        console.error(e);
+        return;
+      }
+    }
+  }
+
+  try {
+    await addOverrides(overrideSetId, overrides);
+  } catch (e) {
+    console.error(`failed to add overrides for '${overrideSetId}'`, e);
+
+    process.exitCode = 1;
+
+    return;
+  }
+
+  const subProcess = spawn(subCommandName, subArgs, {
+    stdio: 'inherit',
+  });
+
+  let cleanupCalled = false;
+
+  function cleanup() {
+    if (cleanupCalled) {
+      return;
+    }
+
+    cleanupCalled = true;
+
+    removeOverrides(overrideSetId).catch((e) => {
+      console.error(`failed to remove overrides for '${overrideSetId}'`, e);
+    });
+  }
+
+  subProcess.on('exit', (code) => {
+    process.exitCode = code;
+
+    cleanup();
+  });
+
+  subProcess.on('error', (error) => {
+    console.error(error);
+
+    cleanup();
+  });
+
+  process.on('SIGINT', () => {
+    cleanup();
+  });
+
+  process.on('SIGTERM', () => {
+    cleanup();
+
+    subProcess.kill();
+  });
+}
+
 module.exports = {
   startBackend,
   spawnBackendProcess,
@@ -78,4 +152,5 @@ module.exports = {
   getOverrides,
   addOverrides,
   removeOverrides,
+  wrapCommandWithOverrides,
 };
