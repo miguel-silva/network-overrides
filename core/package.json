@@ -12,6 +12,12 @@
   },
   "author": "Miguel Silva",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miguel-silva/network-overrides.git",
+    "directory": "core"
+  },
+  "bugs": "https://github.com/miguel-silva/network-overrides/issues",
   "dependencies": {
     "fastify": "^3.14.0",
     "fastify-websocket": "^3.1.0",
