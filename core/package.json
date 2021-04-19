@@ -1,6 +1,6 @@
 {
   "name": "network-overrides",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI and backend for the Network Overrides browser extension",
   "bin": {
     "network-overrides": "./cli.js"
@@ -12,6 +12,12 @@
   },
   "author": "Miguel Silva",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miguel-silva/network-overrides.git",
+    "directory": "core"
+  },
+  "bugs": "https://github.com/miguel-silva/network-overrides/issues",
   "dependencies": {
     "fastify": "^3.14.0",
     "fastify-websocket": "^3.1.0",
