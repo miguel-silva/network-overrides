@@ -8,22 +8,22 @@ It was designed to allow one to develop web client-side apps on top of an extern
 
 Additionally, by having the command line as a source of truth, one can ensure that a set of overrides are only in place while the related process is running (ex: dev-server).
 
-## Quick start
+## Getting started
 
-1. Install npm package locally:
+### 1. Install npm package locally:
 
 ```sh
 npm i network-overrides
 ```
 
-2. Bootstrap a local dev-server, wrapped with overrides:
+### 2. Bootstrap a local dev-server, wrapped with overrides:
 
 ```sh
 npx network-overrides wrap-command 'npx webpack serve' my-first-override '[{"from":"https://live-cdn\\.com/(.*)","to":"http://localhost:8080/$1"}]' --ensure-backend
 ```
 
 <details>
-  <summary>Command functionality</summary>
+  <summary>What does that command do?</summary>
   <ol>
     <li>Ensure that the <strong>Network Overrides</strong> shared backend is running, which in turn will transmit the current overrides to the browser extension when necessary</li>
     <li>Add a single override which redirects assets from <code>https://live-cdn.com/</code> to the corresponding path under <code>http://localhost:8080/</code>. It belongs to an override set called <em>my-first-override</em></li>
@@ -32,15 +32,19 @@ npx network-overrides wrap-command 'npx webpack serve' my-first-override '[{"fro
   </ol>
 </details>
 
-3. Install the companion extension:
+See [CLI commands](core/README.md#cli-commands) for more details on the available API.
 
-   1. Chrome:
-      1. ~~From Chrome's webstore~~ (currently in review process)
-      2. Manually:
-         1. Download the `network-overrides-<version>.crx` from the [latest release](https://github.com/miguel-silva/network-overrides/releases/latest)
-         2. Open `chrome://extensions/`, enable Developer Mode and drag-and-drop the downloaded extension over the extensions page.
+### 3. Install the companion extension:
 
-4. enable the current overrides on the browser-side by clicking the extension's icon and then "Connect" inside the extension's popover.
+- Chrome:
+  - ~~From Chrome's webstore~~ (currently in review process)
+  - Manually:
+    1. Download the `network-overrides-<version>.crx` from the [latest release](https://github.com/miguel-silva/network-overrides/releases/latest)
+    2. Open `chrome://extensions/`, enable Developer Mode and drag-and-drop the downloaded extension over the extensions page.
+
+### 4. Enable the current overrides on the browser-side
+
+Click the extension's icon and then the **Connect** button inside the extension's popover.
 
 ## Override
 
@@ -49,13 +53,13 @@ An override is described by a couple of properties:
 - `from`: RegExp string that is used as a matching pattern for request urls, optionally defining the capture groups to be used in replacements with `to`
 - `to`: Replacement string, able to support the [typical patterns](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#specifying_a_string_as_a_parameter).
 
-Essentially, the override is used as:
+Essentially, the override is used within the extension as follows:
 
 ```js
 const pattern = new RegExp(override.from);
 
-if(interceptedUrl.match(pattern)){
-  const redirectUrl = interceptedUrl.replace(pattern, override.to);
+if(interceptedRequestUrl.match(pattern)){
+  const redirectUrl = interceptedRequestUrl.replace(pattern, override.to);
   ...
 }
 

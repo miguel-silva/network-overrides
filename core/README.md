@@ -8,7 +8,7 @@ See [the general documentation](https://github.com/miguel-silva/network-override
 
 ## CLI commands
 
-### start-command
+### start-backend
 
 Format: `network-overrides start-backend [--background]`
 
