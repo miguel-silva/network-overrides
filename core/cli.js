@@ -59,7 +59,7 @@ switch (commandName) {
     if (args.length < 2) {
       throw new Error(
         `'network-overrides add' expects an override set id followed by the respective overrides\n` +
-          `\t- JSON string. ex: \n\t\tnetwork-overrides add google-search '[{from:"https://www.google.com/search/(.*)",to:"http://localhost:3000/\$1"}]\n` +
+          `\t- JSON string. ex: \n\t\tnetwork-overrides add google-search '[{from:"https://www.google.com/search/(.*)",to:"http://localhost:3000/\$1"}]'\n` +
           `\t- path to JSON file preceeded by @. ex: \n\t\tnetwork-overrides add google-search @config/overrides.json`,
       );
     }
