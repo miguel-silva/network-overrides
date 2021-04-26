@@ -55,6 +55,12 @@ async function spawnBackendProcessInBackground(options = {}) {
   return serverProcess;
 }
 
+async function stopServer() {
+  await fetch(`${backendUrl}/`, {
+    method: 'DELETE',
+  });
+}
+
 function getOverrides() {
   return fetch(`${backendUrl}/overrides`).then((response) => response.json());
 }
@@ -149,6 +155,7 @@ module.exports = {
   startBackend,
   spawnBackendProcess,
   spawnBackendProcessInBackground,
+  stopServer,
   getOverrides,
   addOverrides,
   removeOverrides,

@@ -16,6 +16,12 @@ Starts the shared overrides backend in port `8117`. In case the port is already 
 
 Running it with the `--background` flag will start it as a background (detached) process instead.
 
+### stop-backend
+
+Format: `network-overrides stop-backend`
+
+Stops the shared overrides backend, making it exit normally.
+
 ### add
 
 Format: `network-overrides add <override-set-id> <overrides>`
