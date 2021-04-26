@@ -37,7 +37,7 @@ See [CLI commands](core/README.md#cli-commands) for more details on the availabl
 ### 3. Install the companion extension:
 
 - Chrome:
-  - ~~From Chrome's webstore~~ (currently in review process)
+  - From [Chrome's webstore](https://chrome.google.com/webstore/detail/network-overrides/kineamfncbnialdjlpmhibfjegiiphkk)
   - Manually:
     1. Download the `network-overrides-<version>.crx` from the [latest release](https://github.com/miguel-silva/network-overrides/releases/latest)
     2. Open `chrome://extensions/`, enable Developer Mode and drag-and-drop the downloaded extension over the extensions page.
@@ -93,7 +93,7 @@ The browser extension is responsible for:
 
 ## Next steps
 
-- [ ] add `network-overrides stop-backend` command
+- [x] add `network-overrides stop-backend` command
 - [ ] automatically stop shared backend when running in a background process and becomes idle
 - [ ] add tests
 - [ ] convert to TypeScript
