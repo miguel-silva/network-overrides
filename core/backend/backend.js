@@ -23,6 +23,12 @@ app.get('/', { websocket: true }, (connection) => {
   });
 });
 
+app.delete('/', () => {
+  stop();
+
+  return true;
+});
+
 app.get('/overrides', async () => {
   console.log('returning overrides', overridesMap);
 
@@ -68,6 +74,19 @@ function start(port) {
 
       throw error;
     });
+}
+
+function stop() {
+  console.log('stopping server');
+
+  // close websocket connections with completed status code
+  overridesWebsocketConnectionSet.forEach((connection) =>
+    connection.socket.close(1000),
+  );
+
+  overridesWebsocketConnectionSet.clear();
+
+  app.close();
 }
 
 function sendOverridesMapToClients() {

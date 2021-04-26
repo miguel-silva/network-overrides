@@ -4,6 +4,7 @@ const path = require('path');
 const {
   startBackend,
   spawnBackendProcessInBackground,
+  stopServer,
   addOverrides,
   removeOverrides,
   getOverrides,
@@ -50,6 +51,22 @@ switch (commandName) {
 
         console.error(e);
       }
+    });
+
+    break;
+  }
+
+  case 'stop-backend': {
+    stopServer().catch((e) => {
+      process.exitCode = 1;
+
+      if (e.code === 'ECONNREFUSED') {
+        console.warn('The backend seems to not be running.');
+
+        return;
+      }
+
+      console.error(e);
     });
 
     break;
