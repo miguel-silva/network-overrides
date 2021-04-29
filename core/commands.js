@@ -13,34 +13,64 @@ function startBackend() {
   return start(PORT);
 }
 
-function spawnBackendProcess(options = {}) {
+async function spawnBackendProcess(options = {}) {
   const backendStartPath = path.join(__dirname, 'backend', 'start.js');
 
   const { envOptions, ...restOptions } = options;
 
-  const initializedServerProcessPromise = new Promise((resolve, reject) => {
-    const serverProcess = spawn('node', [backendStartPath], {
-      ...restOptions,
-      env: {
-        ...process.env,
-        ...envOptions,
-      },
-    });
+  let serverIsAlreadyRunning = false;
 
-    setTimeout(() => {
-      if (serverProcess.exitCode) {
-        const error = new Error('server initialization failed');
+  try {
+    // check if the server is already running
+    await getOverrides();
+    serverIsAlreadyRunning = true;
+  } catch (e) {}
 
-        error.exitCode = serverProcess.exitCode;
+  if (serverIsAlreadyRunning) {
+    const error = new Error('server is already running');
 
-        reject(error);
-      }
+    error.exitCode = EADDRINUSE.exitCode;
 
-      resolve(serverProcess);
-    }, 500);
+    throw error;
+  }
+
+  // spawn the backend process
+  const serverProcess = spawn('node', [backendStartPath], {
+    ...restOptions,
+    env: {
+      ...process.env,
+      ...envOptions,
+    },
   });
 
-  return initializedServerProcessPromise;
+  // wait a while for the server to get up, checking its status multiple times in between
+  let attemptsLeft = 10;
+
+  while (attemptsLeft-- > 0) {
+    await sleep(100);
+
+    // if the server has exited -> throw corresponding error
+    if (serverProcess.exitCode) {
+      const error = new Error('server initialization failed');
+
+      error.exitCode = serverProcess.exitCode;
+
+      throw error;
+    }
+
+    try {
+      // check if the server is ready
+      await getOverrides();
+
+      return serverProcess;
+    } catch (e) {
+      // the server is not ready but hasn't exited
+      // suppress the error and try again if there are any attempts left
+    }
+  }
+
+  // exhausted attemps -> return serverProcess anyways
+  return serverProcess;
 }
 
 async function spawnBackendProcessInBackground(options = {}) {
@@ -85,9 +115,8 @@ async function wrapCommandWithOverrides(
   overrides,
   ensureBackend,
 ) {
-  const [subCommandName, ...subArgs] = commandToWrap.trim().split(/ +/g);
-
   if (ensureBackend) {
+    // start the process in the background, continuing if already running
     try {
       await spawnBackendProcessInBackground();
     } catch (e) {
@@ -100,6 +129,7 @@ async function wrapCommandWithOverrides(
     }
   }
 
+  // add overrides set
   try {
     await addOverrides(overrideSetId, overrides);
   } catch (e) {
@@ -110,12 +140,20 @@ async function wrapCommandWithOverrides(
     return;
   }
 
+  // get command name and related args by splitting the command by spaces
+  const [subCommandName, ...subArgs] = commandToWrap.trim().split(/ +/g);
+
+  // start wrapped command
   const subProcess = spawn(subCommandName, subArgs, {
     stdio: 'inherit',
   });
 
+  //#region cleanup section
   let cleanupCalled = false;
 
+  /**
+   * remove overrides set, if we haven't yet
+   */
   function cleanup() {
     if (cleanupCalled) {
       return;
@@ -148,6 +186,13 @@ async function wrapCommandWithOverrides(
     cleanup();
 
     subProcess.kill();
+  });
+  //#endregion cleanup section
+}
+
+function sleep(durationMs) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, durationMs);
   });
 }
 
