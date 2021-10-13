@@ -114,6 +114,7 @@ async function wrapCommandWithOverrides(
   overrideSetId,
   overrides,
   ensureBackend,
+  commandSpawnOptions,
 ) {
   if (ensureBackend) {
     // start the process in the background, continuing if already running
@@ -146,6 +147,7 @@ async function wrapCommandWithOverrides(
   // start wrapped command
   const subProcess = spawn(subCommandName, subArgs, {
     stdio: 'inherit',
+    ...commandSpawnOptions,
   });
 
   //#region cleanup section
