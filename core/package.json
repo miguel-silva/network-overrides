@@ -6,7 +6,12 @@
     "network-overrides": "./cli.js"
   },
   "main": "./cli.js",
-  "files": ["backend/*", "cli.js", "commands.js", "constants.js"],
+  "files": [
+    "backend/*",
+    "cli.js",
+    "commands.js",
+    "constants.js"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,11 +24,11 @@
   },
   "bugs": "https://github.com/miguel-silva/network-overrides/issues",
   "dependencies": {
-    "fastify": "^4.10.2",
-    "@fastify/websocket": "^7.1.1",
-    "node-fetch": "^3.3.0"
+    "@fastify/websocket": "7.1.1",
+    "fastify": "4.10.2",
+    "node-fetch": "2.6.7"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "2.0.20"
   }
 }
