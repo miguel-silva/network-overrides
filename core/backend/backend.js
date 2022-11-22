@@ -3,7 +3,7 @@ const fastify = require('fastify');
 const { EADDRINUSE } = require('./errors');
 
 const app = fastify();
-app.register(require('fastify-websocket'));
+app.register(require('@fastify/websocket'));
 
 const overridesMap = {};
 

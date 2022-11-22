@@ -1,12 +1,17 @@
 {
   "name": "network-overrides",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "CLI and backend for the Network Overrides browser extension",
   "bin": {
     "network-overrides": "./cli.js"
   },
   "main": "./cli.js",
-  "files": ["backend/*", "cli.js", "commands.js", "constants.js"],
+  "files": [
+    "backend/*",
+    "cli.js",
+    "commands.js",
+    "constants.js"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,11 +24,11 @@
   },
   "bugs": "https://github.com/miguel-silva/network-overrides/issues",
   "dependencies": {
-    "fastify": "^3.14.0",
-    "fastify-websocket": "^3.1.0",
-    "node-fetch": "^2.6.1"
+    "@fastify/websocket": "7.1.1",
+    "fastify": "4.10.2",
+    "node-fetch": "2.6.7"
   },
   "devDependencies": {
-    "nodemon": "^2.0.7"
+    "nodemon": "2.0.20"
   }
 }
