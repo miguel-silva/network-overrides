@@ -8,60 +8,61 @@ app.register(require('@fastify/websocket'));
 const overridesMap = {};
 
 const overridesWebsocketConnectionSet = new Set();
+app.register(async function (app) {
+  app.get('/', { websocket: true }, (connection) => {
+    console.log('new connection');
 
-app.get('/', { websocket: true }, (connection) => {
-  console.log('new connection');
+    overridesWebsocketConnectionSet.add(connection);
 
-  overridesWebsocketConnectionSet.add(connection);
+    connection.socket.send(createOverridesMessage());
 
-  connection.socket.send(createOverridesMessage());
+    connection.socket.on('close', () => {
+      console.log('closing connection');
 
-  connection.socket.on('close', () => {
-    console.log('closing connection');
-
-    overridesWebsocketConnectionSet.delete(connection);
+      overridesWebsocketConnectionSet.delete(connection);
+    });
   });
-});
 
-app.delete('/', () => {
-  stop();
+  app.delete('/', () => {
+    stop();
 
-  return true;
-});
+    return true;
+  });
 
-app.get('/overrides', async () => {
-  console.log('returning overrides', overridesMap);
+  app.get('/overrides', async () => {
+    console.log('returning overrides', overridesMap);
 
-  return overridesMap;
-});
+    return overridesMap;
+  });
 
-app.post('/overrides/:overrideSetId', async (request) => {
-  const { overrideSetId } = request.params;
+  app.post('/overrides/:overrideSetId', async (request) => {
+    const { overrideSetId } = request.params;
 
-  console.log('adding overrides', request.params.overrideSetId, request.body);
+    console.log('adding overrides', request.params.overrideSetId, request.body);
 
-  overridesMap[overrideSetId] = request.body;
+    overridesMap[overrideSetId] = request.body;
 
-  sendOverridesMapToClients();
+    sendOverridesMapToClients();
 
-  return true;
-});
+    return true;
+  });
 
-app.delete('/overrides/:overrideSetId', async (request) => {
-  const { overrideSetId } = request.params;
+  app.delete('/overrides/:overrideSetId', async (request) => {
+    const { overrideSetId } = request.params;
 
-  console.log('removing overrides', request.params.overrideSetId);
+    console.log('removing overrides', request.params.overrideSetId);
 
-  delete overridesMap[overrideSetId];
+    delete overridesMap[overrideSetId];
 
-  sendOverridesMapToClients();
+    sendOverridesMapToClients();
 
-  return true;
+    return true;
+  });
 });
 
 function start(port) {
   return app
-    .listen(port)
+    .listen({ port })
     .then(() => {
       console.log(`Server running at http://localhost:${port}/`);
     })
