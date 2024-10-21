@@ -24,11 +24,11 @@
   },
   "bugs": "https://github.com/miguel-silva/network-overrides/issues",
   "dependencies": {
-    "@fastify/websocket": "7.1.1",
-    "fastify": "4.10.2",
+    "@fastify/websocket": "10.0.1",
+    "fastify": "4.28.1",
     "node-fetch": "2.6.7"
   },
   "devDependencies": {
-    "nodemon": "2.0.20"
+    "nodemon": "3.1.7"
   }
 }

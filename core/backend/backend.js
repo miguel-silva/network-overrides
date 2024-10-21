@@ -7,19 +7,19 @@ app.register(require('@fastify/websocket'));
 
 const overridesMap = {};
 
-const overridesWebsocketConnectionSet = new Set();
+const overridesWebsocketSet = new Set();
 app.register(async function (app) {
-  app.get('/', { websocket: true }, (connection) => {
+  app.get('/', { websocket: true }, (socket) => {
     console.log('new connection');
 
-    overridesWebsocketConnectionSet.add(connection);
+    overridesWebsocketSet.add(socket);
 
-    connection.socket.send(createOverridesMessage());
+    socket.send(createOverridesMessage());
 
-    connection.socket.on('close', () => {
+    socket.on('close', () => {
       console.log('closing connection');
 
-      overridesWebsocketConnectionSet.delete(connection);
+      overridesWebsocketSet.delete(socket);
     });
   });
 
@@ -81,28 +81,26 @@ function stop() {
   console.log('stopping server');
 
   // close websocket connections with completed status code
-  overridesWebsocketConnectionSet.forEach((connection) =>
-    connection.socket.close(1000),
-  );
+  overridesWebsocketSet.forEach((socket) => socket.close(1000));
 
-  overridesWebsocketConnectionSet.clear();
+  overridesWebsocketSet.clear();
 
   app.close();
 }
 
 function sendOverridesMapToClients() {
-  if (overridesWebsocketConnectionSet.size === 0) {
+  if (overridesWebsocketSet.size === 0) {
     return;
   }
 
   console.log(
-    `sending latest overrides to ${overridesWebsocketConnectionSet.size} client(s)`,
+    `sending latest overrides to ${overridesWebsocketSet.size} client(s)`,
   );
 
   const messageText = createOverridesMessage();
 
-  overridesWebsocketConnectionSet.forEach((connection) => {
-    connection.socket.send(messageText);
+  overridesWebsocketSet.forEach((socket) => {
+    socket.send(messageText);
   });
 }
 
