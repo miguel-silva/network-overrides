@@ -137,7 +137,7 @@ async function updateState(newState) {
         overrides.map(({ from, to }) => {
           return {
             from: from,
-            to: to,
+            to: to.replaceAll('$', '\\'),
           };
         }),
       )
