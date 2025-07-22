@@ -46,6 +46,7 @@ function connect() {
   });
 
   overridesSocket = new WebSocket('ws://localhost:8117');
+  startHeartbeat();
 
   overridesSocket.onmessage = (event) => {
     console.log('socket message', event);
@@ -96,9 +97,10 @@ function closeSocket() {
     overridesSocket.close(1000);
     overridesSocket = null;
   }
+  stopHeartbeat();
 }
 
-function handleBeforeRequest(request) {
+async function handleBeforeRequest(request) {
   const override = activeOverrides.find(
     (override) => !!request.url.match(override.from),
   );
@@ -123,15 +125,19 @@ function handleBeforeRequest(request) {
   };
 }
 
-function updateState(newState) {
+chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) =>
+  console.log('chrome.declarativeNetRequest.onRuleMatchedDebug', info),
+);
+
+async function updateState(newState) {
   state = newState;
 
   const newActiveOverrides = newState.overridesMap
     ? Object.values(newState.overridesMap).flatMap((overrides) =>
         overrides.map(({ from, to }) => {
           return {
-            from: new RegExp(from),
-            to,
+            from: from,
+            to: to,
           };
         }),
       )
@@ -140,18 +146,74 @@ function updateState(newState) {
   const areOverridesInPlace = activeOverrides.length > 0;
 
   if (areOverridesInPlace && newActiveOverrides.length === 0) {
-    chrome.webRequest.onBeforeRequest.removeListener(handleBeforeRequest);
+    console.log('what should we do in this scenario???');
+
+    const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const oldRuleIds = oldRules.map((rule) => rule.id);
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: oldRuleIds,
+    });
+
+    // chrome.webRequest.onBeforeRequest.removeListener(handleBeforeRequest);
   } else if (!areOverridesInPlace && newActiveOverrides.length > 0) {
-    chrome.webRequest.onBeforeRequest.addListener(
-      handleBeforeRequest,
-      {
-        urls: ['<all_urls>'],
-      },
-      ['blocking'],
-    );
+    const newRules = newActiveOverrides.map(({ from, to }, index) => {
+      return {
+        id: index + 1,
+        // priority: 1,
+        action: { type: 'redirect', redirect: { regexSubstitution: to } },
+        condition: { regexFilter: from },
+      };
+    });
+
+    const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const oldRuleIds = oldRules.map((rule) => rule.id);
+
+    console.log({ oldRuleIds, oldRules, newRules });
+
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: oldRuleIds,
+      addRules: newRules,
+    });
+    // chrome.webRequest.onBeforeRequest.addListener(
+    //   handleBeforeRequest,
+    //   {
+    //     urls: ['<all_urls>'],
+    //   },
+    //   ['blocking'],
+    // );
   }
 
   activeOverrides = newActiveOverrides;
 
   chrome.runtime.sendMessage({ type: 'state-updated', state });
+}
+
+/**
+ * Tracks when a service worker was last alive and extends the service worker
+ * lifetime by writing the current time to extension storage every 20 seconds.
+ * You should still prepare for unexpected termination - for example, if the
+ * extension process crashes or your extension is manually stopped at
+ * chrome://serviceworker-internals.
+ */
+let heartbeatInterval;
+
+async function runHeartbeat() {
+  await chrome.storage.local.set({ 'last-heartbeat': new Date().getTime() });
+}
+
+/**
+ * Starts the heartbeat interval which keeps the service worker alive. Call
+ * this sparingly when you are doing work which requires persistence, and call
+ * stopHeartbeat once that work is complete.
+ */
+async function startHeartbeat() {
+  // Run the heartbeat once at service worker startup.
+  runHeartbeat().then(() => {
+    // Then again every 20 seconds.
+    heartbeatInterval = setInterval(runHeartbeat, 20 * 1000);
+  });
+}
+
+async function stopHeartbeat() {
+  clearInterval(heartbeatInterval);
 }

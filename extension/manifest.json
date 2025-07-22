@@ -1,14 +1,19 @@
 {
   "name": "Network Overrides",
   "description": "Override network calls. Configurable via network-overrides Node package.",
-  "version": "0.1.0",
-  "manifest_version": 2,
+  "version": "0.2.0",
+  "manifest_version": 3,
   "background": {
-    "page": "background/background.html",
-    "persistent": true
+    "service_worker": "worker/service_worker.js",
+    "type": "module"
   },
-  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>"],
-  "browser_action": {
+  "permissions": [
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "storage"
+  ],
+  "host_permissions": ["*://*/*"],
+  "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "/images/network-overrides-16.png",
