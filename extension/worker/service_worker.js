@@ -2,8 +2,6 @@ let state = {
   status: 'ready',
 };
 
-let activeOverrides = [];
-
 let overridesSocket;
 
 chrome.windows.onRemoved.addListener(function () {
@@ -100,92 +98,50 @@ function closeSocket() {
   stopHeartbeat();
 }
 
-async function handleBeforeRequest(request) {
-  const override = activeOverrides.find(
-    (override) => !!request.url.match(override.from),
-  );
-
-  if (!override) {
-    return;
-  }
-
-  const redirectUrl = request.url.replace(override.from, override.to);
-
-  console.log(
-    'redirecting',
-    request.url,
-    'to',
-    redirectUrl,
-    'based on',
-    override,
-  );
-
-  return {
-    redirectUrl,
-  };
-}
-
 chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) =>
-  console.log('chrome.declarativeNetRequest.onRuleMatchedDebug', info),
+  console.log('rule matched', info),
 );
 
 async function updateState(newState) {
-  state = newState;
+  if (state.overridesMap || newState.overridesMap) {
+    const oldRules = await chrome.declarativeNetRequest.getSessionRules();
 
-  const newActiveOverrides = newState.overridesMap
-    ? Object.values(newState.overridesMap).flatMap((overrides) =>
-        overrides.map(({ from, to }) => {
-          return {
-            from: from,
-            to: to.replaceAll('$', '\\'),
-          };
-        }),
-      )
-    : [];
+    const removeRuleIds = oldRules.map((rule) => rule.id);
 
-  const areOverridesInPlace = activeOverrides.length > 0;
+    const addRules = getRulesFromOverridesMap(newState.overridesMap);
 
-  if (areOverridesInPlace && newActiveOverrides.length === 0) {
-    console.log('what should we do in this scenario???');
+    console.log('updating session rules', { addRules, removeRuleIds });
 
-    const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
-    const oldRuleIds = oldRules.map((rule) => rule.id);
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: oldRuleIds,
+    await chrome.declarativeNetRequest.updateSessionRules({
+      removeRuleIds,
+      addRules,
     });
-
-    // chrome.webRequest.onBeforeRequest.removeListener(handleBeforeRequest);
-  } else if (!areOverridesInPlace && newActiveOverrides.length > 0) {
-    const newRules = newActiveOverrides.map(({ from, to }, index) => {
-      return {
-        id: index + 1,
-        // priority: 1,
-        action: { type: 'redirect', redirect: { regexSubstitution: to } },
-        condition: { regexFilter: from },
-      };
-    });
-
-    const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
-    const oldRuleIds = oldRules.map((rule) => rule.id);
-
-    console.log({ oldRuleIds, oldRules, newRules });
-
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: oldRuleIds,
-      addRules: newRules,
-    });
-    // chrome.webRequest.onBeforeRequest.addListener(
-    //   handleBeforeRequest,
-    //   {
-    //     urls: ['<all_urls>'],
-    //   },
-    //   ['blocking'],
-    // );
   }
 
-  activeOverrides = newActiveOverrides;
+  state = newState;
 
   chrome.runtime.sendMessage({ type: 'state-updated', state });
+}
+
+function getRulesFromOverridesMap(overridesMap) {
+  if (!overridesMap) {
+    return [];
+  }
+
+  let idCounter = 1;
+
+  return Object.values(overridesMap).flatMap((overrideSet) =>
+    overrideSet.map(({ from, to }) => {
+      return {
+        id: idCounter++,
+        action: {
+          type: 'redirect',
+          redirect: { regexSubstitution: to.replaceAll('$', '\\') },
+        },
+        condition: { regexFilter: from },
+      };
+    }),
+  );
 }
 
 /**
