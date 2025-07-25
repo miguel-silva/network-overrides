@@ -98,7 +98,7 @@ function closeSocket() {
   stopHeartbeat();
 }
 
-chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) =>
+chrome.declarativeNetRequest.onRuleMatchedDebug?.addListener((info) =>
   console.log('rule matched', info),
 );
 

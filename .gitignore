@@ -1,4 +1,7 @@
 node_modules
 .DS_Store
 
+.vscode/settings.json
+
 network-overrides-*.tgz
+extension.zip

@@ -1,7 +1,7 @@
 {
   "name": "Network Overrides",
   "description": "Override network calls. Configurable via network-overrides Node package.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "manifest_version": 3,
   "background": {
     "service_worker": "worker/service_worker.js",
