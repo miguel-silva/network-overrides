@@ -62,7 +62,7 @@ app.register(async function (app) {
 
 function start(port) {
   return app
-    .listen({ port })
+    .listen({ port, host: '127.0.0.1' })
     .then(() => {
       console.log(`Server running at http://localhost:${port}/`);
     })
