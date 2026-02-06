@@ -31,7 +31,7 @@ Adds (or updates) a list of overrides that belong to a specific set. Inspired by
 - JSON string. ex:
 
 ```sh
-network-overrides add google-search '[{from:"https://www.google.com/search/(.*)",to:"http://localhost:3000/$1"}]'
+network-overrides add google-search '[{"from":"https://www.google.com/search/(.*)","to":"http://localhost:3000/$1"}]'
 ```
 
 - path to JSON file preceeded by `@`. ex:
